@@ -1,0 +1,270 @@
+@page "/ertekelesek/{LocationId:int}"
+@using doggo.Models
+@using doggo.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+
+<PageTitle>DogGo - Értékelések</PageTitle>
+
+<div class="container mt-5 pt-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="text-inner p-5 fade-in">
+                <div class="text-center mb-4">
+                    <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                    <h1 class="display-4">Hely értékelései</h1>
+                    @if (_location != null)
+                    {
+                        <h2 class="text-primary">@_location.Name</h2>
+                        <p class="fs-5">@_location.Description</p>
+                    }
+                </div>
+                
+                @if (_ratings != null && _ratings.Any())
+                {
+                    <div class="mb-4">
+                        <h3>Átlag értékelés: 
+                            <span class="text-warning">
+                                @if (_averageRating.HasValue)
+                                {
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= _averageRating.Value)
+                                        {
+                                            <i class="fas fa-star"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="far fa-star"></i>
+                                        }
+                                    }
+                                    <span class="ms-2">(@_averageRating.Value.ToString("0.0"))</span>
+                                }
+                            </span>
+                        </h3>
+                    </div>
+                    
+                    <div class="row">
+                        @foreach (var rating in _ratings)
+                        {
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card rating-card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="card-title mb-0">
+                                                <i class="fas fa-user me-2"></i>
+                                                @rating.Username
+                                            </h6>
+                                            <div class="rating-stars">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= rating.Rating)
+                                                    {
+                                                        <i class="fas fa-star text-warning"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="far fa-star text-muted"></i>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                        <p class="card-text">@rating.Comment</p>
+                                        <div class="text-muted small">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            @rating.CreatedAt.ToString("yyyy.MM.dd")
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (_isLoading)
+                {
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Betöltés...</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center">
+                        <i class="fas fa-star fa-5x text-muted mb-3"></i>
+                        <p class="fs-4 text-muted">Még nincsenek értékelések</p>
+                        <p class="fs-6 text-muted">Legyél te az első, aki értékeli ezt a helyet!</p>
+                    </div>
+                }
+                
+                <!-- Add rating form -->
+                <div class="mt-5">
+                    <h4>
+                        <i class="fas fa-plus me-2"></i>
+                        Értékelés hozzáadása
+                    </h4>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Értékelés</label>
+                        <div class="rating-input">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                var star = i;
+                                <i class="@(_newRating.Rating >= star ? "fas" : "far") fa-star rating-star" 
+                                   @onclick="() => SetRating(star)"></i>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="comment" class="form-label">Megjegyzés</label>
+                        <textarea id="comment" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  @bind="_newRating.Comment"
+                                  placeholder="Írd le tapasztalataidat erről a helyről..."></textarea>
+                    </div>
+                    
+                    <button class="btn btn-primary" @onclick="SubmitRating" disabled="@_isSubmitting">
+                        @if (_isSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-paper-plane me-2"></i>
+                        }
+                        Értékelés küldése
+                    </button>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <NavLink href="/" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i>
+                        Vissza a főoldalra
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rating-card .card-body {
+    background: var(--gradient-glass);
+    backdrop-filter: var(--blur-md);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-bounce);
+}
+
+.rating-card:hover .card-body {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-primary-hover);
+}
+
+.rating-input .rating-star {
+    font-size: 1.5rem;
+    margin-right: 0.25rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: var(--text-muted);
+}
+
+.rating-input .fas.rating-star {
+    color: #FFD700;
+}
+
+.rating-input .rating-star:hover {
+    transform: scale(1.2);
+}
+</style>
+
+@code {
+    [Parameter] public int LocationId { get; set; }
+    
+    private Location? _location;
+    private List<LocationRating>? _ratings;
+    private LocationRating _newRating = new();
+    private double? _averageRating;
+    private bool _isLoading = true;
+    private bool _isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRatings();
+    }
+
+    private async Task LoadRatings()
+    {
+        try
+        {
+            _isLoading = true;
+            
+            // TODO: Implement API calls
+            // _location = await ApiService.GetLocationAsync(LocationId);
+            // _ratings = await ApiService.GetLocationRatingsAsync(LocationId);
+            
+            // Mock data for now
+            await Task.Delay(1000);
+            _location = new Location
+            {
+                Id = LocationId,
+                Name = "Példa Hely",
+                Description = "Ez egy példa hely leírás."
+            };
+            
+            _ratings = new List<LocationRating>();
+            _averageRating = _ratings.Any() ? _ratings.Average(r => r.Rating) : null;
+        }
+        catch (Exception)
+        {
+            // Handle error
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SetRating(int rating)
+    {
+        _newRating.Rating = rating;
+        StateHasChanged();
+    }
+
+    private async Task SubmitRating()
+    {
+        if (_newRating.Rating == 0 || string.IsNullOrEmpty(_newRating.Comment))
+        {
+            return;
+        }
+
+        try
+        {
+            _isSubmitting = true;
+            StateHasChanged();
+
+            // TODO: Implement API call
+            // _newRating.LocationId = LocationId;
+            // await ApiService.CreateRatingAsync(_newRating);
+
+            // Simulate API call
+            await Task.Delay(1000);
+
+            _newRating = new LocationRating();
+            await LoadRatings();
+        }
+        catch (Exception)
+        {
+            // Handle error
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+}

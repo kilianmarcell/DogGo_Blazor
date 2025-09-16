@@ -1,0 +1,140 @@
+@page "/bejelentkezes"
+@using doggo.Models
+@using doggo.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@inject ILocalStorageService LocalStorage
+
+<PageTitle>DogGo - Bejelentkezés</PageTitle>
+
+<div class="login-container">
+    <div class="d-grid gap-3 col-3 mx-auto mt-5 mb-5 text-inner login-card fade-in">
+        <div class="text-decoration-underline fs-2 text-center pb-3 login-title">
+            <i class="fas fa-sign-in-alt me-3"></i>
+            Bejelentkezés
+        </div>
+        <div class="container">
+            <div class="row mb-3 input-group-animated">
+                <label for="username" class="fs-5 p-0 input-label">
+                    <i class="fas fa-user me-2"></i>
+                    Felhasználónév
+                </label>
+                <input type="text"
+                    id="username"
+                    class="fs-5 input-doggo"
+                    @bind="_loginRequest.Username"
+                    placeholder="Felhasználónév"
+                    @onkeyup="HandleKeyUp" />
+            </div>
+
+            <div class="row mb-3 input-group-animated">
+                <label for="password" class="fs-5 p-0 input-label">
+                    <i class="fas fa-lock me-2"></i>
+                    Jelszó
+                </label>
+                <input type="password"
+                    id="password"
+                    class="fs-5 input-doggo"
+                    @bind="_loginRequest.Password"
+                    placeholder="Jelszó"
+                    @onkeyup="HandleKeyUp" />
+            </div>
+        </div>
+        <div class="pt-3">
+            <button class="btn btn-primary w-100 fs-5 animated-btn" @onclick="LoginUser" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                }
+                else
+                {
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                }
+                Bejelentkezés
+            </button>
+        </div>
+
+        @if (_error)
+        {
+            <div class="alert alert-danger d-flex align-items-center error-alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                @_errorMessage
+            </div>
+        }
+
+        <div class="text-end fs-6">
+            <NavLink href="/regisztracio" class="register-link">
+                <i class="fas fa-user-plus me-2"></i>
+                Nincs még fiókom
+            </NavLink>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginRequest _loginRequest = new();
+    private bool _error = false;
+    private string _errorMessage = "";
+    private bool _isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if user is already logged in
+        var token = await LocalStorage.GetItemAsync("token");
+        if (!string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task LoginUser()
+    {
+        try
+        {
+            _isLoading = true;
+            _error = false;
+            StateHasChanged();
+
+            var response = await ApiService.LoginAsync(_loginRequest);
+            
+            if (response != null)
+            {
+                Navigation.NavigateTo("/", forceLoad: true);
+            }
+            else
+            {
+                _error = true;
+                _errorMessage = "Helytelen felhasználónév vagy jelszó!";
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = true;
+            if (ex.Message.Contains("401"))
+            {
+                _errorMessage = "Helytelen felhasználónév vagy jelszó!";
+            }
+            else if (ex.Message.Contains("403"))
+            {
+                _errorMessage = "Ez a felhasználó tiltva van!";
+            }
+            else
+            {
+                _errorMessage = "Hiba történt a bejelentkezés során!";
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await LoginUser();
+        }
+    }
+}

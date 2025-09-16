@@ -1,0 +1,122 @@
+@using doggo.Models
+@using doggo.Services
+@inject IApiService ApiService
+
+<div id="locs" class="text-inner mb-5 locations-container">
+    @if (_bestRating != null)
+    {
+        <article class="best-location-card fade-in">
+            <div class="card-body">
+                <div class="trophy-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h2 class="best-location-title">@_bestRating.Name</h2>
+                <div class="best-location-rating">
+                    <i class="fas fa-star"></i>
+                    <span>@_bestRating.AverageRating</span>
+                </div>
+            </div>
+        </article>
+    }
+    
+    <div class="row location-grid justify-content-center">
+        @if (_locations != null)
+        {
+            @foreach (var (location, index) in _locations.Select((l, i) => (l, i)))
+            {
+                <article class="location-card col-12 col-md-4 col-lg-3 mb-4" 
+                         style="animation-delay: @((index * 0.1))s">
+                    <div class="card-content">
+                        <div class="location-header">
+                            <h3 class="location-name">
+                                <i class="fas fa-map-marker-alt me-2"></i>
+                                @location.Name
+                            </h3>
+                            @if (location.AverageRating.HasValue)
+                            {
+                                <div class="location-rating">
+                                    <i class="fas fa-star"></i>
+                                    <span>@location.AverageRating</span>
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="location-coordinates">
+                            <div class="coordinate-item">
+                                <i class="fas fa-compass me-2"></i>
+                                <span>Szélesség: @location.Latitude</span>
+                            </div>
+                            <div class="coordinate-item">
+                                <i class="fas fa-compass me-2"></i>
+                                <span>Hosszúság: @location.Longitude</span>
+                            </div>
+                        </div>
+                        
+                        <p class="location-description">@location.Description</p>
+                        
+                        <div class="location-actions">
+                            @if (location.IsAllowed)
+                            {
+                                <button class="btn btn-primary action-btn" 
+                                        @onclick="() => ViewLocationRating(location.Id)">
+                                    <i class="fas fa-eye me-2"></i>
+                                    Hely megtekintése
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </article>
+            }
+        }
+    </div>
+    
+    @if (_isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Betöltés...</span>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Location>? _locations;
+    private Location? _bestRating;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLocations();
+    }
+
+    private async Task LoadLocations()
+    {
+        try
+        {
+            _isLoading = true;
+            // TODO: Implement API calls to load locations
+            // _locations = await ApiService.GetLocationsAsync();
+            // _bestRating = await ApiService.GetBestRatingAsync();
+            
+            // Mock data for now
+            _locations = new List<Location>();
+            _bestRating = null;
+        }
+        catch (Exception)
+        {
+            // Handle error
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ViewLocationRating(int locationId)
+    {
+        // Navigate to ratings page
+        // Navigation.NavigateTo($"/ertekelesek/{locationId}");
+    }
+}

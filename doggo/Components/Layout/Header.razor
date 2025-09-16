@@ -1,0 +1,90 @@
+@using doggo.Models
+@using doggo.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div>
+    <nav id="navbar" class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid mx-5">
+            <div class="md-auto d-flex align-items-center">
+                <img src="DogGoLogo.png" id="logo" class="img-fluid rounded" alt="DogGo logo">
+                <NavLink href="/" class="nav-link navbar-brand fs-1">DogGo</NavLink>
+            </div>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse text-center" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 fs-4">
+                    <li class="nav-item">
+                        <NavLink href="/" class="nav-link"><i class="fas fa-home"></i></NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com/kilianmarcell/DogGo_Web"><i class="fas fa-code"></i></a>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink href="/doggoinformacio" class="nav-link"><i class="fas fa-question"></i></NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink href="/hibajelentes" class="nav-link"><i class="fas fa-comment-dots"></i></NavLink>
+                    </li>
+                    @if (_currentUser == null)
+                    {
+                        <li class="nav-item">
+                            <NavLink href="/regisztracio" class="nav-link"><i class="fas fa-sign-in-alt"></i></NavLink>
+                        </li>
+                    }
+                    @if (_currentUser != null)
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                @_currentUser.Username <i class="fas fa-user"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" aria-labelledby="navbarDropdown">
+                                <li><NavLink href="/felhasznalo" class="dropdown-item">Adataim módosíása</NavLink></li>
+                                <li><NavLink href="/helyek" class="dropdown-item">Helyeim módosíása</NavLink></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a @onclick="SignOut" class="dropdown-item" href="javascript:void(0)">Kijelentkezés</a></li>
+                            </ul>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private User? _currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ApiService.UserChanged += OnUserChanged;
+        await LoadCurrentUser();
+    }
+
+    private async Task LoadCurrentUser()
+    {
+        _currentUser = await ApiService.GetCurrentUserAsync();
+        StateHasChanged();
+    }
+
+    private void OnUserChanged(User? user)
+    {
+        _currentUser = user;
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task SignOut()
+    {
+        await ApiService.LogoutAsync();
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        ApiService.UserChanged -= OnUserChanged;
+    }
+}

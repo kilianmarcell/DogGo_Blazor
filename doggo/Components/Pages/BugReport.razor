@@ -1,0 +1,145 @@
+@page "/hibajelentes"
+
+<PageTitle>DogGo - Hibajelentés</PageTitle>
+
+<div class="container mt-5 pt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-inner p-5 fade-in">
+                <div class="text-center mb-4">
+                    <i class="fas fa-comment-dots fa-3x text-warning mb-3"></i>
+                    <h1 class="display-4">Hibajelentés</h1>
+                    <p class="fs-5">Segíts nekünk javítani az alkalmazást!</p>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="error-type" class="form-label fs-5">
+                        <i class="fas fa-bug me-2"></i>
+                        Hiba típusa
+                    </label>
+                    <select id="error-type" class="form-select fs-5" @bind="_selectedErrorType">
+                        <option value="">Válaszd ki a hiba típusát</option>
+                        <option value="ui">Felhasználói felület</option>
+                        <option value="functionality">Funkcionalitás</option>
+                        <option value="performance">Teljesítmény</option>
+                        <option value="other">Egyéb</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="error-description" class="form-label fs-5">
+                        <i class="fas fa-edit me-2"></i>
+                        Hiba leírása
+                    </label>
+                    <textarea id="error-description" 
+                              class="form-control fs-5" 
+                              rows="5" 
+                              placeholder="Írd le részletesen, hogy milyen hibát találtál..."
+                              @bind="_errorDescription"></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="user-email" class="form-label fs-5">
+                        <i class="fas fa-envelope me-2"></i>
+                        Email (opcionális)
+                    </label>
+                    <input type="email" 
+                           id="user-email" 
+                           class="form-control fs-5" 
+                           placeholder="email@example.com"
+                           @bind="_userEmail" />
+                </div>
+                
+                <div class="d-grid">
+                    <button class="btn btn-warning btn-lg fs-5" @onclick="SubmitErrorReport" disabled="@_isSubmitting">
+                        @if (_isSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-paper-plane me-2"></i>
+                        }
+                        Hibajelentés elküldése
+                    </button>
+                </div>
+                
+                @if (_isSuccess)
+                {
+                    <div class="alert alert-success mt-3 d-flex align-items-center">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Köszönjük a hibajelentést! Hamarosan foglalkozunk vele.
+                    </div>
+                }
+                
+                @if (_hasError)
+                {
+                    <div class="alert alert-danger mt-3 d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Hiba történt a jelentés elküldése során. Próbáld újra!
+                    </div>
+                }
+                
+                <div class="text-center mt-4">
+                    <NavLink href="/" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i>
+                        Vissza a főoldalra
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _selectedErrorType = "";
+    private string _errorDescription = "";
+    private string _userEmail = "";
+    private bool _isSubmitting = false;
+    private bool _isSuccess = false;
+    private bool _hasError = false;
+
+    private async Task SubmitErrorReport()
+    {
+        if (string.IsNullOrEmpty(_selectedErrorType) || string.IsNullOrEmpty(_errorDescription))
+        {
+            _hasError = true;
+            _isSuccess = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            _isSubmitting = true;
+            _hasError = false;
+            _isSuccess = false;
+            StateHasChanged();
+
+            // Simulate API call
+            await Task.Delay(1000);
+
+            // TODO: Implement actual error reporting API call
+            // await ApiService.SubmitErrorReportAsync(new ErrorReport 
+            // { 
+            //     Type = _selectedErrorType,
+            //     Description = _errorDescription,
+            //     UserEmail = _userEmail
+            // });
+
+            _isSuccess = true;
+            _selectedErrorType = "";
+            _errorDescription = "";
+            _userEmail = "";
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+}

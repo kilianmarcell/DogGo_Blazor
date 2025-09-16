@@ -1,0 +1,208 @@
+@page "/felhasznalo"
+@using doggo.Models
+@using doggo.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+
+<PageTitle>DogGo - Adataim</PageTitle>
+
+<div class="container mt-5 pt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-inner p-5 fade-in">
+                <div class="text-center mb-4">
+                    <i class="fas fa-user-edit fa-3x text-primary mb-3"></i>
+                    <h1 class="display-4">Adataim módosítása</h1>
+                </div>
+                
+                @if (_currentUser != null)
+                {
+                    <div class="mb-3">
+                        <label for="username" class="form-label fs-5">
+                            <i class="fas fa-user me-2"></i>
+                            Felhasználónév
+                        </label>
+                        <input type="text" 
+                               id="username" 
+                               class="form-control fs-5" 
+                               @bind="_currentUser.Username" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label fs-5">
+                            <i class="fas fa-envelope me-2"></i>
+                            Email
+                        </label>
+                        <input type="email" 
+                               id="email" 
+                               class="form-control fs-5" 
+                               @bind="_currentUser.Email" />
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label fs-5">
+                            <i class="fas fa-lock me-2"></i>
+                            Új jelszó (hagyja üresen ha nem szeretné változtatni)
+                        </label>
+                        <input type="password" 
+                               id="password" 
+                               class="form-control fs-5" 
+                               @bind="_newPassword"
+                               placeholder="Új jelszó" />
+                    </div>
+                    
+                    <div class="d-grid mb-3">
+                        <button class="btn btn-primary btn-lg fs-5" @onclick="SaveChanges" disabled="@_isSaving">
+                            @if (_isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-save me-2"></i>
+                            }
+                            Változások mentése
+                        </button>
+                    </div>
+                    
+                    @if (_isSuccess)
+                    {
+                        <div class="alert alert-success d-flex align-items-center">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Adatok sikeresen frissítve!
+                        </div>
+                    }
+                    
+                    @if (_hasError)
+                    {
+                        <div class="alert alert-danger d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            @_errorMessage
+                        </div>
+                    }
+                }
+                else if (_isLoading)
+                {
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Betöltés...</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Kérjük, jelentkezz be az adataid megtekintéséhez!
+                    </div>
+                }
+                
+                <div class="text-center mt-4">
+                    <NavLink href="/" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i>
+                        Vissza a főoldalra
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private User? _currentUser;
+    private string _newPassword = "";
+    private bool _isLoading = true;
+    private bool _isSaving = false;
+    private bool _isSuccess = false;
+    private bool _hasError = false;
+    private string _errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        ApiService.UserChanged += OnUserChanged;
+        await LoadCurrentUser();
+    }
+
+    private async Task LoadCurrentUser()
+    {
+        try
+        {
+            _isLoading = true;
+            _currentUser = await ApiService.GetCurrentUserAsync();
+            
+            if (_currentUser == null)
+            {
+                Navigation.NavigateTo("/bejelentkezes");
+                return;
+            }
+        }
+        catch (Exception)
+        {
+            Navigation.NavigateTo("/bejelentkezes");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnUserChanged(User? user)
+    {
+        _currentUser = user;
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task SaveChanges()
+    {
+        if (_currentUser == null) return;
+
+        try
+        {
+            _isSaving = true;
+            _isSuccess = false;
+            _hasError = false;
+            StateHasChanged();
+
+            // TODO: Implement user update API call
+            // var updateRequest = new UpdateUserRequest
+            // {
+            //     Username = _currentUser.Username,
+            //     Email = _currentUser.Email,
+            //     Password = string.IsNullOrEmpty(_newPassword) ? null : _newPassword
+            // };
+            // 
+            // var success = await ApiService.UpdateUserAsync(updateRequest);
+
+            // Simulate API call
+            await Task.Delay(1000);
+            bool success = true;
+
+            if (success)
+            {
+                _isSuccess = true;
+                _newPassword = "";
+            }
+            else
+            {
+                _hasError = true;
+                _errorMessage = "Hiba történt az adatok mentése során!";
+            }
+        }
+        catch (Exception)
+        {
+            _hasError = true;
+            _errorMessage = "Hiba történt az adatok mentése során!";
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        ApiService.UserChanged -= OnUserChanged;
+    }
+}

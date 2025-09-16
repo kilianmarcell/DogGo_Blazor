@@ -1,0 +1,242 @@
+@page "/regisztracio"
+@using doggo.Models
+@using doggo.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@inject ILocalStorageService LocalStorage
+
+<PageTitle>DogGo - Regisztráció</PageTitle>
+
+<div class="register-container">
+    <div class="d-grid gap-3 col-3 mx-auto mt-5 mb-5 text-inner register-card fade-in">
+        <div class="text-decoration-underline fs-2 text-center pb-3 register-title">
+            <i class="fas fa-user-plus me-3"></i>
+            Regisztráció
+        </div>
+        
+        <div class="container">
+            <div class="row mb-3 input-group-animated">
+                <label for="reg-username" class="fs-5 p-0 input-label">
+                    <i class="fas fa-user me-2"></i>
+                    Felhasználónév
+                </label>
+                <input type="text"
+                    id="reg-username"
+                    class="fs-5 input-doggo"
+                    @bind="_registerRequest.Username"
+                    placeholder="Felhasználónév"
+                    @onkeyup="HandleKeyUp" />
+
+                @if (!string.IsNullOrEmpty(_usernameError))
+                {
+                    <span class="text-danger text-center validation-error">
+                        <i class="fas fa-exclamation-circle me-1"></i>
+                        @_usernameError
+                    </span>
+                }
+            </div>
+
+            <div class="row mb-3 input-group-animated">
+                <label for="reg-email" class="fs-5 p-0 input-label">
+                    <i class="fas fa-envelope me-2"></i>
+                    Email
+                </label>
+                <input type="email"
+                    id="reg-email"
+                    class="fs-5 input-doggo"
+                    @bind="_registerRequest.Email"
+                    placeholder="Email"
+                    @onkeyup="HandleKeyUp" />
+
+                @if (!string.IsNullOrEmpty(_emailError))
+                {
+                    <span class="text-danger text-center validation-error">
+                        <i class="fas fa-exclamation-circle me-1"></i>
+                        @_emailError
+                    </span>
+                }
+            </div>
+
+            <div class="row mb-3 input-group-animated">
+                <label for="reg-password" class="fs-5 p-0 input-label">
+                    <i class="fas fa-lock me-2"></i>
+                    Jelszó
+                </label>
+                <input type="password"
+                    id="reg-password"
+                    class="fs-5 input-doggo"
+                    @bind="_registerRequest.Password"
+                    placeholder="Jelszó"
+                    @onkeyup="HandleKeyUp" />
+
+                @if (!string.IsNullOrEmpty(_passwordError))
+                {
+                    <span class="text-danger text-center validation-error">
+                        <i class="fas fa-exclamation-circle me-1"></i>
+                        @_passwordError
+                    </span>
+                }
+            </div>
+            
+            <div class="row mb-3 input-group-animated">
+                <label for="reg-confirm-password" class="fs-5 p-0 input-label">
+                    <i class="fas fa-lock me-2"></i>
+                    Jelszó ismét
+                </label>
+                <input type="password"
+                    id="reg-confirm-password"
+                    class="fs-5 input-doggo"
+                    @bind="_registerRequest.PasswordConfirmation"
+                    placeholder="Jelszó ismét"
+                    @onkeyup="HandleKeyUp" />
+
+                @if (!string.IsNullOrEmpty(_confirmPasswordError))
+                {
+                    <span class="text-danger text-center validation-error">
+                        <i class="fas fa-exclamation-circle me-1"></i>
+                        @_confirmPasswordError
+                    </span>
+                }
+            </div>
+
+            @if (_error)
+            {
+                <div class="alert alert-danger d-flex align-items-center mt-3 error-alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    @_errorMessage
+                </div>
+            }
+        </div>
+        <div class="pt-3">
+            <button class="btn btn-primary w-100 fs-5 animated-btn" @onclick="RegisterUser" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                }
+                else
+                {
+                    <i class="fas fa-user-plus me-2"></i>
+                }
+                Regisztrálás
+            </button>
+        </div>
+
+        <div class="text-end fs-6">
+            <NavLink href="/bejelentkezes" class="login-link">
+                <i class="fas fa-sign-in-alt me-2"></i>
+                Van már fiókom
+            </NavLink>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterRequest _registerRequest = new();
+    private bool _error = false;
+    private string _errorMessage = "";
+    private bool _isLoading = false;
+    
+    private string _usernameError = "";
+    private string _emailError = "";
+    private string _passwordError = "";
+    private string _confirmPasswordError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if user is already logged in
+        var token = await LocalStorage.GetItemAsync("token");
+        if (!string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private bool ValidateForm()
+    {
+        _usernameError = "";
+        _emailError = "";
+        _passwordError = "";
+        _confirmPasswordError = "";
+
+        bool isValid = true;
+
+        if (string.IsNullOrEmpty(_registerRequest.Username) || _registerRequest.Username.Length < 3)
+        {
+            _usernameError = "A felhasználónév legalább 3 karakter hosszú legyen!";
+            isValid = false;
+        }
+
+        if (string.IsNullOrEmpty(_registerRequest.Email) || !_registerRequest.Email.Contains("@"))
+        {
+            _emailError = "Érvényes email címet adjon meg!";
+            isValid = false;
+        }
+
+        if (string.IsNullOrEmpty(_registerRequest.Password) || _registerRequest.Password.Length < 6)
+        {
+            _passwordError = "A jelszó legalább 6 karakter hosszú legyen!";
+            isValid = false;
+        }
+
+        if (_registerRequest.Password != _registerRequest.PasswordConfirmation)
+        {
+            _confirmPasswordError = "A jelszavak nem egyeznek!";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private async Task RegisterUser()
+    {
+        try
+        {
+            if (!ValidateForm())
+            {
+                StateHasChanged();
+                return;
+            }
+
+            _isLoading = true;
+            _error = false;
+            StateHasChanged();
+
+            var success = await ApiService.RegisterAsync(_registerRequest);
+            
+            if (success)
+            {
+                Navigation.NavigateTo("/bejelentkezes");
+            }
+            else
+            {
+                _error = true;
+                _errorMessage = "Hiba történt a regisztráció során!";
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = true;
+            if (ex.Message.Contains("409"))
+            {
+                _errorMessage = "Ez a felhasználónév vagy email már használatban van!";
+            }
+            else
+            {
+                _errorMessage = "Hiba történt a regisztráció során!";
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await RegisterUser();
+        }
+    }
+}
