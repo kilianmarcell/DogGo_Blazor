@@ -116,11 +116,21 @@
     private bool _isSuccess = false;
     private bool _hasError = false;
     private string _errorMessage = "";
+    private bool _hasRendered = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         ApiService.UserChanged += OnUserChanged;
-        await LoadCurrentUser();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hasRendered)
+        {
+            _hasRendered = true;
+            await LoadCurrentUser();
+        }
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private async Task LoadCurrentUser()

@@ -58,11 +58,21 @@
 
 @code {
     private User? _currentUser;
+    private bool _hasRendered = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         ApiService.UserChanged += OnUserChanged;
-        await LoadCurrentUser();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hasRendered)
+        {
+            _hasRendered = true;
+            await LoadCurrentUser();
+        }
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private async Task LoadCurrentUser()

@@ -76,15 +76,21 @@
     private bool _error = false;
     private string _errorMessage = "";
     private bool _isLoading = false;
+    private bool _hasRendered = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Check if user is already logged in
-        var token = await LocalStorage.GetItemAsync("token");
-        if (!string.IsNullOrEmpty(token))
+        if (firstRender && !_hasRendered)
         {
-            Navigation.NavigateTo("/");
+            _hasRendered = true;
+            // Check if user is already logged in (only after render when JS interop is available)
+            var token = await LocalStorage.GetItemAsync("token");
+            if (!string.IsNullOrEmpty(token))
+            {
+                Navigation.NavigateTo("/");
+            }
         }
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private async Task LoginUser()

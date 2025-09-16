@@ -1,6 +1,7 @@
 @using doggo.Models
 @using doggo.Services
 @inject IApiService ApiService
+@inject NavigationManager Navigation
 
 <div id="locs" class="text-inner mb-5 locations-container">
     @if (_bestRating != null)
@@ -36,7 +37,14 @@
                             {
                                 <div class="location-rating">
                                     <i class="fas fa-star"></i>
-                                    <span>@location.AverageRating</span>
+                                    <span>@location.AverageRating.Value.ToString("F1")</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="location-rating no-ratings">
+                                    <i class="far fa-star"></i>
+                                    <span>Nincs értékelés</span>
                                 </div>
                             }
                         </div>
@@ -95,17 +103,22 @@
         try
         {
             _isLoading = true;
-            // TODO: Implement API calls to load locations
-            // _locations = await ApiService.GetLocationsAsync();
-            // _bestRating = await ApiService.GetBestRatingAsync();
+            StateHasChanged();
             
-            // Mock data for now
-            _locations = new List<Location>();
-            _bestRating = null;
+            // Load locations with ratings and best rating concurrently
+            var locationsTask = ApiService.GetLocationsWithRatingsAsync();
+            var bestRatingTask = ApiService.GetBestRatingAsync();
+            
+            await Task.WhenAll(locationsTask, bestRatingTask);
+            
+            _locations = await locationsTask ?? new List<Location>();
+            _bestRating = await bestRatingTask;
         }
         catch (Exception)
         {
-            // Handle error
+            // Handle error - could add logging here
+            _locations = new List<Location>();
+            _bestRating = null;
         }
         finally
         {
@@ -116,7 +129,6 @@
 
     private void ViewLocationRating(int locationId)
     {
-        // Navigate to ratings page
-        // Navigation.NavigateTo($"/ertekelesek/{locationId}");
+        Navigation.NavigateTo($"/ertekelesek/{locationId}");
     }
 }
